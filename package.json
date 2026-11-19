@@ -1,0 +1,8 @@
+{
+  "name": "pdf-ppt-cleanup",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agent Skills workflow for editable PPT and reviewed PDF object cleanup",
+  "license": "MIT",
+  "dependencies": {"pptxgenjs": "4.0.1"}
+}

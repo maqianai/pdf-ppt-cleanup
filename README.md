@@ -34,7 +34,13 @@ Agent 查看全部页面图像与 `inspection.json`，判断品牌正文、第�
   "source_sha256": "从 inspection.json 复制当前输入的 SHA256",
   "delete_pages": [2],
   "annotations": [{"page": 1, "xrefs": [42, 43]}],
-  "forms": [{"xref": 123, "sha256": "当前 Form 内容流 SHA256"}]
+  "forms": [],
+  "text_removals": [{
+    "pages": [1],
+    "text": "Members only",
+    "expected_rectangles_per_page": 1,
+    "clip": [0, 350, 720, 405]
+  }]
 }
 ```
 
@@ -44,7 +50,18 @@ Agent 查看全部页面图像与 `inspection.json`，判断品牌正文、第�
 python scripts/pdf_workflow.py clean input.pdf output/clean --plan plan.json
 ```
 
-输出 `clean.pdf`、`verification.json` 和自带页面对照图的 `report.html`。删除整页广告后，JSON 保留原页码到输出页码映射。保留数据检查需要结合视觉审阅与共享 Form 影响页判断。此命令覆盖独立 PDF 对象清理。图片中已经融合的水印需要另行修复，并记录局部损失。
+输出 `clean.pdf`、`verification.json` 和自带页面对照图的 `report.html`。
+
+### v1.1.0 普通文字水印
+
+`inspect` 会在 `text_candidates` 列出会员推广、严禁外传、扫码获取等原生文字候选，包含文字与坐标。确认后使用 `text_removals` 删除普通文字。页码始终使用输入页码，整页删除前执行文字清理。
+
+`expected_rectangles_per_page` 是当前输入中搜索到的矩形数量，跨行或多字体现为多个矩形时按检查结果填写。尾部连字符按原字匹配。相同文案也用于正常正文时，使用 `clip` 限制区域。图片与矢量图形保持，源文件保持。
+
+保存后重新扫描。若 `residual_text_candidates` 非空，退出码为 **2**，HTML 顶部显示 **NEEDS REVIEW**。这时按候选复核，更新计划并使用新的空输出目录运行。此状态的 PDF 供中间复核，不能直接视为清理完成。关键词仅用于候选提示，不直接自动删除。
+
+返回 0 的 `text_scan_clear` 表示原生文本候选已清空，仍需检查图片内文案和全页画面。
+删除整页广告后，JSON 保留原页码到输出页码映射。保留数据检查需要结合视觉审阅与共享 Form 影响页判断。此命令覆盖独立 PDF 对象清理。图片中已经融合的水印需要另行修复，并记录局部损失。
 
 ## 生成可编辑 PPT
 
@@ -71,6 +88,7 @@ PPT 使用 SVG 背景和原生文本框。当前脚本按提取行建立对象�
 
 ```sh
 python tests/smoke.py
+python tests/text_cleanup.py
 ```
 
 测试动态生成三页合成 PDF，验证对象清理、整页删除、输入保护、失败处理和 PPT 原生文字。测试素材由代码创建，未附带用户 PDF、字体源文件、截图或本机路径。

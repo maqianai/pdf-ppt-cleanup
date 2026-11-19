@@ -32,8 +32,8 @@ Agent 查看全部页面图像与 `inspection.json`，判断品牌正文、第�
 ```json
 {
   "source_sha256": "从 inspection.json 复制当前输入的 SHA256",
-  "delete_pages": [8, 17],
-  "annotations": [{"page": 7, "xrefs": [53, 54]}],
+  "delete_pages": [2],
+  "annotations": [{"page": 1, "xrefs": [42, 43]}],
   "forms": [{"xref": 123, "sha256": "当前 Form 内容流 SHA256"}]
 }
 ```

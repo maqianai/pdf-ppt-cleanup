@@ -230,7 +230,7 @@ def clean(source, output, plan_path):
         'claiming lossless preservation. Source file fingerprint is in verification.json.</p>'
         f'<section id="residuals"><h2>{status}</h2><pre>{residual_summary}</pre>'
         f'<details><summary>Removed native-text targets by original page</summary>'
-        f'<pre>{removed_summary}</pre></details></section>' 
+        f'<pre>{removed_summary}</pre></details></section>'
         f'<section id="checks"><h2>Checks</h2><pre>{summary}</pre></section>'
         f'<section id="pages"><h2>Comparison</h2>{"".join(report)}</section></html>',
         encoding="utf-8")

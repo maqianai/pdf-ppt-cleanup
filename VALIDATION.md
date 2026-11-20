@@ -40,3 +40,14 @@ The new synthetic regression verifies repeated ordinary-text footers and inline 
 A private 10-page real-document regression used the same public CLI without the former document-specific stream-patching helper. It removed 20 footer lines, 3 inline promotion phrases and 6 advertising annotations. Native-text residual candidates were zero. Font/image payload and page-size checks passed. Source remained unchanged. The private PDF, cleanup plan and screenshots are excluded from the public repository.
 
 This release does not claim universal marketing-text detection, pixel-perfect rendering, OCR coverage or full editable-PPT font fidelity.
+
+
+## v1.2.0 font regression · 2026-11-20
+
+Ran smoke.py, text_cleanup.py and font_matching.py on PyMuPDF 1.28.2 / fontTools 4.68.0. The new generated TTF fixtures verify renamed but equal glyph geometry, rejection of different geometry with the same name, rejection of serif-to-sans fallback, missing character coverage, and mixed font/bold/italic extraction. The CLI automatically applies its bundled complete-font geometry check during prepare-ppt.
+
+A private single-page regression used an existing brand PDF. The included official OFL BIZ UDPMincho Regular matched all 7 distinct title glyphs (8 occurrences) and their advances from the PDF's embedded BIZ-UDPMincho-Medium. The two-row native title was generated automatically. Mac PowerPoint 16.114.1 initially fell back to Microsoft YaHei until its font cache was refreshed by restarting the application. The subsequent local PDF export actually used BIZUDPMincho-Regular, with 7/7 title glyph outlines and advances matching the source. The same page from Convertio used MingLiU and lost its wood-grain background. This is a private title-specific result, not a universal converter ranking or an all-page fidelity claim.
+
+Actual PowerPoint UI changed the first title to four previously unused characters, saved a separate PPTX, closed and reopened it, then exported PDF. The new characters remained native text in BIZUDPMincho-Regular and the replaced title was absent. The user documents and screenshots stay outside this repository.
+
+Remaining: the other font families on this private page still use disclosed substitutes; background color and text placement differ; semantic paragraph grouping remains necessary. Font embedding inside PPTX is not implemented. A receiving machine must install the supplied licensed font. Full-font coverage, shaping/kerning, non-TTF/CFF resources, other operating systems and other documents are not universally certified.

@@ -32,6 +32,7 @@ async function main() {
         w: Math.max(1, Math.min(page.width - left, right - left + 3)) * scale / 72,
         h: Math.max(item.size * 1.5, bottom - top) * scale / 72,
         fontFace: item.font, fontSize: item.size * scale,
+        bold: item.bold || false, italic: item.italic || false,
         color: item.color.toString(16).padStart(6, '0'),
         margin: 0, breakLine: false, wrap: false, valign: 'top',
       });

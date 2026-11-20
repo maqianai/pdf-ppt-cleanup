@@ -65,6 +65,8 @@ python scripts/pdf_workflow.py clean input.pdf output/clean --plan plan.json
 
 ## 生成可编辑 PPT
 
+v1.2.0 的 `prepare-ppt` 会自动核对内置字体候选，发现字形与字宽一致的完整字体时覆盖旧的替代映射，并输出 `font-audit.json`。也可用其他合法字体库：先读 [字体指南](references/fonts.md)，运行 `scripts/match_fonts.py` 生成经核对的映射。内置附 OFL 许可的 BIZ UDPMincho 完整字体。匹配脚本会拒绝明确的明朝体→黑体风格冲突；匹配失败和替代均写入报告。
+
 从已清理 PDF 或原 PDF 生成可编辑候选。先检查每个原字体标识对应的完整字体是否可用，再创建字体映射文件。
 
 ```json
@@ -78,7 +80,7 @@ python scripts/pdf_workflow.py prepare-ppt output/clean/clean.pdf output/ppt-wor
 node scripts/build_ppt.cjs output/ppt-work/ppt-manifest.json output/clean-editable.pptx
 ```
 
-PPT 使用 SVG 背景和原生文本框。当前脚本按提取行建立对象，Agent 需要进一步合并语义段落、核对多字体混排、乱码、字距与行距。图像内文字需要 OCR、清除底图旧字并重建。PDF 页面中的曲线字可能留在 SVG 背景里。
+PPT 使用 SVG 背景和原生文本框。当前脚本按原始文字片段建立对象，保留各自字体、粗斜体、坐标与基线，Agent 需要进一步合并语义段落、核对多字体混排、乱码、字距与行距。图像内文字需要 OCR、清除底图旧字并重建。PDF 页面中的曲线字可能留在 SVG 背景里。
 
 字体映射缺项会停止构建。存在已映射但机器未安装的字体时，演示软件可能自动替代，因此需要实际应用验证。此脚本不执行字体嵌入。
 

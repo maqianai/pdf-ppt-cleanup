@@ -1,0 +1,10 @@
+{
+  "family": "BIZ UDPMincho",
+  "style": "Regular",
+  "source": "https://github.com/google/fonts/tree/main/ofl/bizudpmincho",
+  "download": "https://raw.githubusercontent.com/google/fonts/main/ofl/bizudpmincho/BIZUDPMincho-Regular.ttf",
+  "license": "OFL-1.1; see OFL.txt",
+  "sha256": "dbcea04578ac1e9d3484525e870ce491bd04361768f4d2ba4b827d96e20f891d",
+  "retrieved": "2026-11-20",
+  "note": "Unmodified font. The historical Medium-to-Regular name change is not identity proof; match actual used glyph outlines and advances for each PDF."
+}

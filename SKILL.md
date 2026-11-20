@@ -1,9 +1,9 @@
 ---
 name: pdf-ppt-cleanup
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
+  compatibility: "Python 3.10+, Node.js 18+; desktop PowerPoint for application verification."
 license: MIT
-compatibility: Python 3.10+, Node.js 18+; desktop PowerPoint for application verification.
 description: PDF 转可编辑 PPT 并尽量保真，或直接清理 PDF 的二维码和水印并验证保留内容无损。适用于营销方案、品牌资料，包含字体核对、对象级清理、抽样与 HTML 对照报告。
 ---
 
@@ -24,6 +24,14 @@ description: PDF 转可编辑 PPT 并尽量保真，或直接清理 PDF 的二�
 - 优先保留原始图片数据和矢量。背景栅格化、重采样、图片修补、文本转轮廓等损失都要在报告标明。不能以提高输出 dpi 代替原始数据保留。
 - 验证段落增字、移动或删除文本框后无旧字残留、无重叠和截断。实际 PowerPoint 保存重开，再导出 PDF，检查文字、字体、边界、行距、尺寸及图片细节。字符集合相同只证明内容检查的一部分，仍须看图与核对阅读顺序。
 - 使用可用的 Presentations 指南和工具。发布版 scripts/build_ppt.cjs 使用真实文本框；逐行候选需继续合并语义段落并做实际应用测试。
+
+## 字体匹配与实际输出核验
+
+转换前读 [references/fonts.md](references/fonts.md)。优先比较合法完整字体的实际字形与字宽，不能把字体名称不同直接当作不匹配，也不能只因名称相同就当作原字体一致。scripts/match_fonts.py 可比较可读取的 TrueType/OpenType 字形，并输出映射与证据；内置一款未修改、附 OFL 许可的 BIZ UDPMincho 完整字体作为可复用候选。
+
+缺原字体时保留风格类别、字重、字符覆盖和字宽。明朝体／宋体不能默认统一替换为黑体。明确的类别冲突会被匹配脚本拒绝；未知风格仍需看图。转换脚本保留每个原始文字片段的字体、粗斜体、基线和坐标，避免一行混排被主字体覆盖。
+
+字体写入 PPT 声明不等于目标应用实际采用。安装合法字体后必要时刷新应用字体缓存；导出 PDF 再检查实际字体和字形，发现回退字体时标为失败并修复。不能以整页截图替代可编辑文本来提高保真指标。未嵌入 PPT 的字体应随许可单独打包并标明接收方需安装，不声称跨设备已解决。
 
 ## 整页无关广告识别
 

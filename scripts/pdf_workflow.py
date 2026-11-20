@@ -240,28 +240,37 @@ def clean(source, output, plan_path):
 
 
 def prepare_ppt(source, output, font_map_path):
-    font_map = json.loads(font_map_path.read_text(encoding="utf-8"))
+    from match_fonts import match
+    requested_map = json.loads(font_map_path.read_text(encoding="utf-8"))
+    bundled_fonts = Path(__file__).resolve().parents[1] / "assets" / "fonts"
+    font_map, font_audit = match(source, [bundled_fonts], requested_map)
+    write_json(output / "font-audit.json", font_audit)
+    if not font_audit["complete"]:
+        raise ValueError("Unresolved or incompatible font mapping; review font-audit.json before building.")
     doc = open_pdf(source)
     pages, warnings = [], []
     for index, page in enumerate(doc):
         groups = []
         for block in page.get_text("dict", flags=0)["blocks"]:
             for line in block["lines"]:
-                spans = line["spans"]
-                text = "".join(span["text"] for span in spans).strip()
-                if not text:
-                    continue
-                style = max(spans, key=lambda span: len(span["text"]))
-                original_font = style["font"]
-                if original_font not in font_map:
-                    raise ValueError(f"Font map missing {original_font!r}; inspect input fonts first.")
-                if "\ufffd" in text:
-                    warnings.append({"page": index + 1, "kind": "unicode_replacement", "text": text})
-                groups.append({
-                    "text": text, "bbox": list(line["bbox"]), "size": style["size"],
-                    "baseline": style["origin"][1], "color": style["color"],
-                    "font": font_map[original_font], "original_font": original_font,
-                })
+                # Preserve each source span's font, weight, baseline and position.
+                # Choosing one dominant style for a mixed-font line loses typography.
+                for style in line["spans"]:
+                    text = style["text"]
+                    if not text.strip():
+                        continue
+                    original_font = style["font"]
+                    if original_font not in font_map:
+                        raise ValueError(f"Font map missing {original_font!r}; inspect input fonts first.")
+                    if "\ufffd" in text:
+                        warnings.append({"page": index + 1, "kind": "unicode_replacement", "text": text})
+                    groups.append({
+                        "text": text, "bbox": list(style["bbox"]), "size": style["size"],
+                        "baseline": style["origin"][1], "color": style["color"],
+                        "font": font_map[original_font], "original_font": original_font,
+                        "bold": bool(style["flags"] & 16),
+                        "italic": bool(style["flags"] & 2),
+                    })
         page.add_redact_annot(page.rect, fill=False)
         page.apply_redactions(images=0, graphics=0, text=0)
         background = output / f"background-{index + 1}.svg"
@@ -271,7 +280,7 @@ def prepare_ppt(source, output, font_map_path):
     write_json(output / "ppt-manifest.json", {
         "pages": pages, "warnings": warnings, "font_map": font_map,
         "limitations": [
-            "Extracted lines require semantic paragraph grouping and manual correction.",
+            "Extracted spans preserve styles but require semantic paragraph grouping and manual correction.",
             "Text already baked into images requires OCR and removal of old image text.",
             "Mapped fonts must be installed and verified in the target presentation app.",
             "Font embedding is not performed by this builder.",

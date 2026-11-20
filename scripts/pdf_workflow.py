@@ -37,15 +37,29 @@ MARKETING_TERMS = (
 def marketing_candidates(page):
     """Flag text for review; never delete solely because a keyword matches."""
     candidates = []
-    for block in page.get_text("dict", flags=0)["blocks"]:
+    blocks = page.get_text("dict", flags=0)["blocks"]
+    edge_text = "".join(s["text"] for b in blocks for l in b["lines"]
+                        if l["bbox"][1] >= page.rect.height * .8 or l["bbox"][3] <= page.rect.height * .15
+                        for s in l["spans"] if s["size"] <= 10)
+    edge_text = "".join(edge_text.split())
+    edge_distributor = "会员私享" in edge_text and ("独家发布" in edge_text or "严禁外传" in edge_text)
+    for block in blocks:
+        block_text = "".join(s["text"] for l in block["lines"] for s in l["spans"])
+        block_text = "".join(block_text.split())
+        distributor = ("会员私享" in block_text and
+                       ("独家发布" in block_text or "严禁外传" in block_text))
         for line in block["lines"]:
             text = "".join(span["text"] for span in line["spans"]).strip()
             compact = "".join(text.split()).casefold()
             matches = [term for term in MARKETING_TERMS
                        if "".join(term.split()).casefold() in compact]
+            edge = line["bbox"][1] >= page.rect.height * .8 or line["bbox"][3] <= page.rect.height * .15
+            is_distributor = distributor or (edge_distributor and edge and max(s["size"] for s in line["spans"]) <= 10)
             if matches:
                 candidates.append({
                     "text": text, "rect": list(line["bbox"]), "keywords": matches,
+                    "category": "distributor_promotion" if is_distributor else "review_required",
+                    "guidance": "Remove distribution/member-access boilerplate for marketing cleanup; footer placement is not a reason to retain it." if is_distributor else "Review context; preserve brand content and ordinary copyright.",
                 })
     return candidates
 
@@ -239,8 +253,17 @@ def clean(source, output, plan_path):
     return not residuals
 
 
-def prepare_ppt(source, output, font_map_path):
+def prepare_ppt(source, output, font_map_path, allow_promotional_text=False):
     from match_fonts import match
+    from paragraphs import paragraphs
+    source_doc = open_pdf(source)
+    candidates = [{"page": i + 1, **row} for i, page in enumerate(source_doc)
+                  for row in marketing_candidates(page)]
+    source_doc.close()
+    write_json(output / "cleanup-review.json", {"candidates": candidates,
+               "allowed_for_original_content_only": allow_promotional_text})
+    if candidates and not allow_promotional_text:
+        raise ValueError("Promotional-text candidates remain. Clean/review the PDF first; --allow-promotional-text is only for explicitly requested original-content PPT, never a cleaned delivery.")
     requested_map = json.loads(font_map_path.read_text(encoding="utf-8"))
     bundled_fonts = Path(__file__).resolve().parents[1] / "assets" / "fonts"
     font_map, font_audit = match(source, [bundled_fonts], requested_map)
@@ -250,9 +273,10 @@ def prepare_ppt(source, output, font_map_path):
     doc = open_pdf(source)
     pages, warnings = [], []
     for index, page in enumerate(doc):
-        groups = []
+        lines = []
         for block in page.get_text("dict", flags=0)["blocks"]:
             for line in block["lines"]:
+                runs = []
                 # Preserve each source span's font, weight, baseline and position.
                 # Choosing one dominant style for a mixed-font line loses typography.
                 for style in line["spans"]:
@@ -264,13 +288,18 @@ def prepare_ppt(source, output, font_map_path):
                         raise ValueError(f"Font map missing {original_font!r}; inspect input fonts first.")
                     if "\ufffd" in text:
                         warnings.append({"page": index + 1, "kind": "unicode_replacement", "text": text})
-                    groups.append({
+                    runs.append({
                         "text": text, "bbox": list(style["bbox"]), "size": style["size"],
                         "baseline": style["origin"][1], "color": style["color"],
                         "font": font_map[original_font], "original_font": original_font,
                         "bold": bool(style["flags"] & 16),
                         "italic": bool(style["flags"] & 2),
                     })
+                if runs:
+                    lines.append({"text": "".join(r["text"] for r in runs),
+                                  "bbox": list(line["bbox"]),
+                                  "baseline": max(r["baseline"] for r in runs), "runs": runs})
+        groups = paragraphs(lines)
         page.add_redact_annot(page.rect, fill=False)
         page.apply_redactions(images=0, graphics=0, text=0)
         background = output / f"background-{index + 1}.svg"
@@ -279,8 +308,10 @@ def prepare_ppt(source, output, font_map_path):
                       "background": background.name, "text": groups})
     write_json(output / "ppt-manifest.json", {
         "pages": pages, "warnings": warnings, "font_map": font_map,
+        "content_status": "original_content_with_promotional_candidates" if candidates else "native_text_scan_clear",
+        "promotional_candidates": candidates,
         "limitations": [
-            "Extracted spans preserve styles but require semantic paragraph grouping and manual correction.",
+            "Geometric paragraphs retain rich styles and source soft line breaks; complex columns and paragraph boundaries still require review.",
             "Text already baked into images requires OCR and removal of old image text.",
             "Mapped fonts must be installed and verified in the target presentation app.",
             "Font embedding is not performed by this builder.",
@@ -296,6 +327,7 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--plan", type=Path)
     parser.add_argument("--font-map", type=Path)
+    parser.add_argument("--allow-promotional-text", action="store_true", help="Original-content PPT only; never use to label uncleaned content as cleaned.")
     args = parser.parse_args()
     if args.output.exists() and any(args.output.iterdir()):
         parser.error("Use an empty output directory.")
@@ -310,7 +342,7 @@ def main():
         if not clean(args.source, args.output, args.plan):
             raise SystemExit(2)
     else:
-        prepare_ppt(args.source, args.output, args.font_map)
+        prepare_ppt(args.source, args.output, args.font_map, args.allow_promotional_text)
 
 
 if __name__ == "__main__":

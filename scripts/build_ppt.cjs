@@ -26,15 +26,26 @@ async function main() {
     for (const item of page.text) {
       const [left, , right, bottom] = item.bbox;
       const top = item.baseline - item.size;
-      slide.addText(item.text, {
+      const content = item.runs ? item.runs.map(run => ({
+        text: run.text,
+        options: { fontFace: run.font, fontSize: run.size * scale,
+          bold: run.bold || false, italic: run.italic || false,
+          color: run.color.toString(16).padStart(6, '0'),
+          softBreakBefore: run.soft_break_before || false },
+      })) : item.text;
+      slide.addText(content, {
         x: (offsetX + left * scale) / 72,
         y: (offsetY + top * scale) / 72,
         w: Math.max(1, Math.min(page.width - left, right - left + 3)) * scale / 72,
         h: Math.max(item.size * 1.5, bottom - top) * scale / 72,
         fontFace: item.font, fontSize: item.size * scale,
-        bold: item.bold || false, italic: item.italic || false,
+        bold: item.runs ? false : item.bold || false, italic: item.runs ? false : item.italic || false,
         color: item.color.toString(16).padStart(6, '0'),
         margin: 0, breakLine: false, wrap: false, valign: 'top',
+        align: item.align || 'left',
+        lineSpacingMultiple: undefined,
+        ...(item.line_spacing ? { lineSpacing: item.line_spacing * scale } : {}),
+        paraSpaceAfter: 0, paraSpaceBefore: 0,
       });
     }
   }

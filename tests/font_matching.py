@@ -78,7 +78,8 @@ with tempfile.TemporaryDirectory() as temp:
     (p / 'map.json').write_text(json.dumps({'Helvetica-Bold': 'Arial', 'Times-Italic': 'Times New Roman'}))
     out = p / 'ppt'; out.mkdir()
     workflow.prepare_ppt(p / 'mixed.pdf', out, p / 'map.json')
-    spans = json.loads((out / 'ppt-manifest.json').read_text())['pages'][0]['text']
+    groups = json.loads((out / 'ppt-manifest.json').read_text())['pages'][0]['text']
+    spans = [run for group in groups for run in group['runs']]
     assert any(x['text'] == 'Hello' and x['bold'] and x['font'] == 'Arial' for x in spans)
     assert any(x['text'] == 'World' and x['italic'] and x['font'] == 'Times New Roman' for x in spans)
 print(json.dumps({'result': 'pass', 'checks': ['renamed equivalent glyph geometry', 'wrong geometry not accepted as identity', 'serif to sans rejected', 'ambiguous subsets not certified', 'missing character coverage rejected', 'mixed fonts and emphasis preserved']}))

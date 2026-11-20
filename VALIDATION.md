@@ -51,3 +51,12 @@ A private single-page regression used an existing brand PDF. The included offici
 Actual PowerPoint UI changed the first title to four previously unused characters, saved a separate PPTX, closed and reopened it, then exported PDF. The new characters remained native text in BIZUDPMincho-Regular and the replaced title was absent. The user documents and screenshots stay outside this repository.
 
 Remaining: the other font families on this private page still use disclosed substitutes; background color and text placement differ; semantic paragraph grouping remains necessary. Font embedding inside PPTX is not implemented. A receiving machine must install the supplied licensed font. Full-font coverage, shaping/kerning, non-TTF/CFF resources, other operating systems and other documents are not universally certified.
+
+
+## v1.3.0 paragraphs and distribution boilerplate · 2026-11-20
+
+The new paragraph_cleanup.py fixture verifies cross-block line grouping, keeping columns separate, a centered short final line, one native PPT shape and paragraph with rich runs and soft breaks, classification/removal of member-distribution footers, blocking an uncleaned PDF before font conversion, and retaining ordinary brand copyright. Existing smoke, text cleanup and font matching suites remain required.
+
+A private single-page regression removed two distributor-boilerplate footer lines via an explicit reviewed plan. In actual PowerPoint, Chinese body text changed from 14 fragment shapes to 1 rich-text shape, English body from 5 to 1; the title and subtitle are separate shapes (4 total). A screenshot verified that selecting the Chinese body selects all three source lines at once. Local PowerPoint PDF export was visually checked for overlap and text completeness.
+
+The builder preserves source soft breaks and disables automatic wrapping to prevent substitute-font wrapping from doubling lines. This improves whole-paragraph selection/editing but does not recreate a word processor's natural paragraph reflow. Long inserted text may need box resizing or explicit wrapping and visual verification. Font substitution/color differences and font-embedding limits from v1.2.0 remain.
